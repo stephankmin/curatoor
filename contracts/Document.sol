@@ -5,5 +5,7 @@ import "node_modules/@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgr
 contract Document is ERC721Upgradeable {
     uint256 public totalSupply = 1;
 
-    function initialize() public {}
+    function initialize() public {
+        __ERC721_init("livedoc", "DOC");
+    }
 }
