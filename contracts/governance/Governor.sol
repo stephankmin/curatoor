@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (governance/Governor.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (governance/Governor.sol)
 
 pragma solidity ^0.8.0;
 
-import "../utils/cryptography/ECDSAUpgradeable.sol";
-import "../utils/cryptography/draft-EIP712Upgradeable.sol";
-import "../utils/introspection/ERC165Upgradeable.sol";
-import "../utils/math/SafeCastUpgradeable.sol";
-import "../utils/AddressUpgradeable.sol";
-import "../utils/ContextUpgradeable.sol";
-import "../utils/TimersUpgradeable.sol";
-import "./IGovernorUpgradeable.sol";
-import "../proxy/utils/Initializable.sol";
+import "../utils/cryptography/ECDSA.sol";
+import "../utils/cryptography/draft-EIP712.sol";
+import "../utils/introspection/ERC165.sol";
+import "../utils/math/SafeCast.sol";
+import "../utils/Address.sol";
+import "../utils/Context.sol";
+import "../utils/Timers.sol";
+import "./IGovernor.sol";
 
 /**
  * @dev Core of the governance system, designed to be extended though various modules.
@@ -24,15 +23,15 @@ import "../proxy/utils/Initializable.sol";
  *
  * _Available since v4.3._
  */
-abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC165Upgradeable, EIP712Upgradeable, IGovernorUpgradeable {
-    using SafeCastUpgradeable for uint256;
-    using TimersUpgradeable for TimersUpgradeable.BlockNumber;
+abstract contract Governor is Context, ERC165, EIP712, IGovernor {
+    using SafeCast for uint256;
+    using Timers for Timers.BlockNumber;
 
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
     struct ProposalCore {
-        TimersUpgradeable.BlockNumber voteStart;
-        TimersUpgradeable.BlockNumber voteEnd;
+        Timers.BlockNumber voteStart;
+        Timers.BlockNumber voteEnd;
         bool executed;
         bool canceled;
     }
@@ -42,8 +41,9 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     mapping(uint256 => ProposalCore) private _proposals;
 
     /**
-     * @dev Restrict access to governor executing address. Some module might override the _executor function to make
-     * sure this modifier is consistant with the execution model.
+     * @dev Restrict access of functions to the governance executor, which may be the Governor itself or a timelock
+     * contract, as specified by {_executor}. This generally means that function with this modifier must be voted on and
+     * executed through the governance protocol.
      */
     modifier onlyGovernance() {
         require(_msgSender() == _executor(), "Governor: onlyGovernance");
@@ -53,15 +53,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     /**
      * @dev Sets the value for {name} and {version}
      */
-    function __Governor_init(string memory name_) internal onlyInitializing {
-        __Context_init_unchained();
-        __ERC165_init_unchained();
-        __EIP712_init_unchained(name_, version());
-        __IGovernor_init_unchained();
-        __Governor_init_unchained(name_);
-    }
-
-    function __Governor_init_unchained(string memory name_) internal onlyInitializing {
+    constructor(string memory name_) EIP712(name_, version()) {
         _name = name_;
     }
 
@@ -75,8 +67,8 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165Upgradeable, ERC165Upgradeable) returns (bool) {
-        return interfaceId == type(IGovernorUpgradeable).interfaceId || super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC165) returns (bool) {
+        return interfaceId == type(IGovernor).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /**
@@ -119,23 +111,36 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
      * @dev See {IGovernor-state}.
      */
     function state(uint256 proposalId) public view virtual override returns (ProposalState) {
-        ProposalCore memory proposal = _proposals[proposalId];
+        ProposalCore storage proposal = _proposals[proposalId];
 
         if (proposal.executed) {
             return ProposalState.Executed;
-        } else if (proposal.canceled) {
+        }
+
+        if (proposal.canceled) {
             return ProposalState.Canceled;
-        } else if (proposal.voteStart.getDeadline() >= block.number) {
-            return ProposalState.Pending;
-        } else if (proposal.voteEnd.getDeadline() >= block.number) {
-            return ProposalState.Active;
-        } else if (proposal.voteEnd.isExpired()) {
-            return
-                _quorumReached(proposalId) && _voteSucceeded(proposalId)
-                    ? ProposalState.Succeeded
-                    : ProposalState.Defeated;
-        } else {
+        }
+
+        uint256 snapshot = proposalSnapshot(proposalId);
+
+        if (snapshot == 0) {
             revert("Governor: unknown proposal id");
+        }
+
+        if (snapshot >= block.number) {
+            return ProposalState.Pending;
+        }
+
+        uint256 deadline = proposalDeadline(proposalId);
+
+        if (deadline >= block.number) {
+            return ProposalState.Active;
+        }
+
+        if (_quorumReached(proposalId) && _voteSucceeded(proposalId)) {
+            return ProposalState.Succeeded;
+        } else {
+            return ProposalState.Defeated;
         }
     }
 
@@ -264,7 +269,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
         string memory errorMessage = "Governor: call reverted without message";
         for (uint256 i = 0; i < targets.length; ++i) {
             (bool success, bytes memory returndata) = targets[i].call{value: values[i]}(calldatas[i]);
-            AddressUpgradeable.verifyCallResult(success, returndata, errorMessage);
+            Address.verifyCallResult(success, returndata, errorMessage);
         }
     }
 
@@ -324,7 +329,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
         bytes32 r,
         bytes32 s
     ) public virtual override returns (uint256) {
-        address voter = ECDSAUpgradeable.recover(
+        address voter = ECDSA.recover(
             _hashTypedDataV4(keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support))),
             v,
             r,
@@ -357,11 +362,24 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     }
 
     /**
+     * @dev Relays a transaction or function call to an arbitrary target. In cases where the governance executor
+     * is some contract other than the governor itself, like when using a timelock, this function can be invoked
+     * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
+     * Note that if the executor is simply the governor itself, use of `relay` is redundant.
+     */
+    function relay(
+        address target,
+        uint256 value,
+        bytes calldata data
+    ) external virtual onlyGovernance {
+        Address.functionCallWithValue(target, data, value);
+    }
+
+    /**
      * @dev Address through which the governor executes action. Will be overloaded by module that execute actions
      * through another contract such as a timelock.
      */
     function _executor() internal view virtual returns (address) {
         return address(this);
     }
-    uint256[48] private __gap;
 }

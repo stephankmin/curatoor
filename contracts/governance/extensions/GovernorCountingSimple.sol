@@ -3,24 +3,14 @@
 
 pragma solidity ^0.8.0;
 
-import "../GovernorUpgradeable.sol";
-import "../../proxy/utils/Initializable.sol";
+import "../Governor.sol";
 
 /**
  * @dev Extension of {Governor} for simple, 3 options, vote counting.
  *
  * _Available since v4.3._
  */
-abstract contract GovernorCountingSimpleUpgradeable is Initializable, GovernorUpgradeable {
-    function __GovernorCountingSimple_init() internal onlyInitializing {
-        __Context_init_unchained();
-        __ERC165_init_unchained();
-        __IGovernor_init_unchained();
-        __GovernorCountingSimple_init_unchained();
-    }
-
-    function __GovernorCountingSimple_init_unchained() internal onlyInitializing {
-    }
+abstract contract GovernorCountingSimple is Governor {
     /**
      * @dev Supported vote types. Matches Governor Bravo ordering.
      */
@@ -113,5 +103,4 @@ abstract contract GovernorCountingSimpleUpgradeable is Initializable, GovernorUp
             revert("GovernorVotingSimple: invalid value for enum VoteType");
         }
     }
-    uint256[49] private __gap;
 }

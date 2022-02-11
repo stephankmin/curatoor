@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (governance/extensions/GovernorTimelockCompound.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (governance/extensions/GovernorTimelockCompound.sol)
 
 pragma solidity ^0.8.0;
 
-import "./IGovernorTimelockUpgradeable.sol";
-import "../GovernorUpgradeable.sol";
-import "../../utils/math/SafeCastUpgradeable.sol";
-import "../../proxy/utils/Initializable.sol";
+import "./IGovernorTimelock.sol";
+import "../Governor.sol";
+import "../../utils/math/SafeCast.sol";
 
 /**
  * https://github.com/compound-finance/compound-protocol/blob/master/contracts/Timelock.sol[Compound's timelock] interface
  */
-interface ICompoundTimelockUpgradeable {
+interface ICompoundTimelock {
     receive() external payable;
 
     // solhint-disable-next-line func-name-mixedcase
@@ -74,15 +73,15 @@ interface ICompoundTimelockUpgradeable {
  *
  * _Available since v4.3._
  */
-abstract contract GovernorTimelockCompoundUpgradeable is Initializable, IGovernorTimelockUpgradeable, GovernorUpgradeable {
-    using SafeCastUpgradeable for uint256;
-    using TimersUpgradeable for TimersUpgradeable.Timestamp;
+abstract contract GovernorTimelockCompound is IGovernorTimelock, Governor {
+    using SafeCast for uint256;
+    using Timers for Timers.Timestamp;
 
     struct ProposalTimelock {
-        TimersUpgradeable.Timestamp timer;
+        Timers.Timestamp timer;
     }
 
-    ICompoundTimelockUpgradeable private _timelock;
+    ICompoundTimelock private _timelock;
 
     mapping(uint256 => ProposalTimelock) private _proposalTimelocks;
 
@@ -94,29 +93,21 @@ abstract contract GovernorTimelockCompoundUpgradeable is Initializable, IGoverno
     /**
      * @dev Set the timelock.
      */
-    function __GovernorTimelockCompound_init(ICompoundTimelockUpgradeable timelockAddress) internal onlyInitializing {
-        __Context_init_unchained();
-        __ERC165_init_unchained();
-        __IGovernor_init_unchained();
-        __IGovernorTimelock_init_unchained();
-        __GovernorTimelockCompound_init_unchained(timelockAddress);
-    }
-
-    function __GovernorTimelockCompound_init_unchained(ICompoundTimelockUpgradeable timelockAddress) internal onlyInitializing {
+    constructor(ICompoundTimelock timelockAddress) {
         _updateTimelock(timelockAddress);
     }
 
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165Upgradeable, GovernorUpgradeable) returns (bool) {
-        return interfaceId == type(IGovernorTimelockUpgradeable).interfaceId || super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, Governor) returns (bool) {
+        return interfaceId == type(IGovernorTimelock).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /**
      * @dev Overriden version of the {Governor-state} function with added support for the `Queued` and `Expired` status.
      */
-    function state(uint256 proposalId) public view virtual override(IGovernorUpgradeable, GovernorUpgradeable) returns (ProposalState) {
+    function state(uint256 proposalId) public view virtual override(IGovernor, Governor) returns (ProposalState) {
         ProposalState status = super.state(proposalId);
 
         if (status != ProposalState.Succeeded) {
@@ -187,7 +178,7 @@ abstract contract GovernorTimelockCompoundUpgradeable is Initializable, IGoverno
     ) internal virtual override {
         uint256 eta = proposalEta(proposalId);
         require(eta > 0, "GovernorTimelockCompound: proposal not yet queued");
-        AddressUpgradeable.sendValue(payable(_timelock), msg.value);
+        Address.sendValue(payable(_timelock), msg.value);
         for (uint256 i = 0; i < targets.length; ++i) {
             _timelock.executeTransaction(targets[i], values[i], "", calldatas[i], eta);
         }
@@ -233,22 +224,23 @@ abstract contract GovernorTimelockCompoundUpgradeable is Initializable, IGoverno
 
     /**
      * @dev Public endpoint to update the underlying timelock instance. Restricted to the timelock itself, so updates
-     * must be proposed, scheduled and executed using the {Governor} workflow.
+     * must be proposed, scheduled, and executed through governance proposals.
      *
-     * For security reason, the timelock must be handed over to another admin before setting up a new one. The two
+     * For security reasons, the timelock must be handed over to another admin before setting up a new one. The two
      * operations (hand over the timelock) and do the update can be batched in a single proposal.
      *
      * Note that if the timelock admin has been handed over in a previous operation, we refuse updates made through the
      * timelock if admin of the timelock has already been accepted and the operation is executed outside the scope of
      * governance.
+
+     * CAUTION: It is not recommended to change the timelock while there are other queued governance proposals.
      */
-    function updateTimelock(ICompoundTimelockUpgradeable newTimelock) external virtual onlyGovernance {
+    function updateTimelock(ICompoundTimelock newTimelock) external virtual onlyGovernance {
         _updateTimelock(newTimelock);
     }
 
-    function _updateTimelock(ICompoundTimelockUpgradeable newTimelock) private {
+    function _updateTimelock(ICompoundTimelock newTimelock) private {
         emit TimelockChange(address(_timelock), address(newTimelock));
         _timelock = newTimelock;
     }
-    uint256[48] private __gap;
 }

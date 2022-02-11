@@ -1,23 +1,16 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (governance/IGovernor.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (governance/IGovernor.sol)
 
 pragma solidity ^0.8.0;
 
-import "../utils/introspection/ERC165Upgradeable.sol";
-import "../proxy/utils/Initializable.sol";
+import "../utils/introspection/ERC165.sol";
 
 /**
  * @dev Interface of the {Governor} core.
  *
  * _Available since v4.3._
  */
-abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
-    function __IGovernor_init() internal onlyInitializing {
-        __IGovernor_init_unchained();
-    }
-
-    function __IGovernor_init_unchained() internal onlyInitializing {
-    }
+abstract contract IGovernor is IERC165 {
     enum ProposalState {
         Pending,
         Active,
@@ -200,7 +193,7 @@ abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
     function castVote(uint256 proposalId, uint8 support) public virtual returns (uint256 balance);
 
     /**
-     * @dev Cast a with a reason
+     * @dev Cast a vote with a reason
      *
      * Emits a {VoteCast} event.
      */
@@ -222,5 +215,4 @@ abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
         bytes32 r,
         bytes32 s
     ) public virtual returns (uint256 balance);
-    uint256[50] private __gap;
 }

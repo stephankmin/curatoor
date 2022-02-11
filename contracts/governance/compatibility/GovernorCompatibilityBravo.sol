@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.4.2) (governance/compatibility/GovernorCompatibilityBravo.sol)
+// OpenZeppelin Contracts (last updated v4.5.0) (governance/compatibility/GovernorCompatibilityBravo.sol)
 
 pragma solidity ^0.8.0;
 
-import "../../utils/CountersUpgradeable.sol";
-import "../../utils/math/SafeCastUpgradeable.sol";
-import "../extensions/IGovernorTimelockUpgradeable.sol";
-import "../GovernorUpgradeable.sol";
-import "./IGovernorCompatibilityBravoUpgradeable.sol";
-import "../../proxy/utils/Initializable.sol";
+import "../../utils/Counters.sol";
+import "../../utils/math/SafeCast.sol";
+import "../extensions/IGovernorTimelock.sol";
+import "../Governor.sol";
+import "./IGovernorCompatibilityBravo.sol";
 
 /**
  * @dev Compatibility layer that implements GovernorBravo compatibility on to of {Governor}.
@@ -20,20 +19,9 @@ import "../../proxy/utils/Initializable.sol";
  *
  * _Available since v4.3._
  */
-abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGovernorTimelockUpgradeable, IGovernorCompatibilityBravoUpgradeable, GovernorUpgradeable {
-    function __GovernorCompatibilityBravo_init() internal onlyInitializing {
-        __Context_init_unchained();
-        __ERC165_init_unchained();
-        __IGovernor_init_unchained();
-        __IGovernorTimelock_init_unchained();
-        __IGovernorCompatibilityBravo_init_unchained();
-        __GovernorCompatibilityBravo_init_unchained();
-    }
-
-    function __GovernorCompatibilityBravo_init_unchained() internal onlyInitializing {
-    }
-    using CountersUpgradeable for CountersUpgradeable.Counter;
-    using TimersUpgradeable for TimersUpgradeable.BlockNumber;
+abstract contract GovernorCompatibilityBravo is IGovernorTimelock, IGovernorCompatibilityBravo, Governor {
+    using Counters for Counters.Counter;
+    using Timers for Timers.BlockNumber;
 
     enum VoteType {
         Against,
@@ -70,7 +58,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
         uint256[] memory values,
         bytes[] memory calldatas,
         string memory description
-    ) public virtual override(IGovernorUpgradeable, GovernorUpgradeable) returns (uint256) {
+    ) public virtual override(IGovernor, Governor) returns (uint256) {
         _storeProposal(_msgSender(), targets, values, new string[](calldatas.length), calldatas, description);
         return super.propose(targets, values, calldatas, description);
     }
@@ -285,7 +273,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
         require(!receipt.hasVoted, "GovernorCompatibilityBravo: vote already cast");
         receipt.hasVoted = true;
         receipt.support = support;
-        receipt.votes = SafeCastUpgradeable.toUint96(weight);
+        receipt.votes = SafeCast.toUint96(weight);
 
         if (support == uint8(VoteType.Against)) {
             details.againstVotes += weight;
@@ -297,5 +285,4 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
             revert("GovernorCompatibilityBravo: invalid vote type");
         }
     }
-    uint256[49] private __gap;
 }

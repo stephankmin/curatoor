@@ -3,15 +3,14 @@
 
 pragma solidity ^0.8.0;
 
-import "../GovernorUpgradeable.sol";
-import "../../proxy/utils/Initializable.sol";
+import "../Governor.sol";
 
 /**
  * @dev Extension of {Governor} for settings updatable through governance.
  *
  * _Available since v4.4._
  */
-abstract contract GovernorSettingsUpgradeable is Initializable, GovernorUpgradeable {
+abstract contract GovernorSettings is Governor {
     uint256 private _votingDelay;
     uint256 private _votingPeriod;
     uint256 private _proposalThreshold;
@@ -23,22 +22,11 @@ abstract contract GovernorSettingsUpgradeable is Initializable, GovernorUpgradea
     /**
      * @dev Initialize the governance parameters.
      */
-    function __GovernorSettings_init(
+    constructor(
         uint256 initialVotingDelay,
         uint256 initialVotingPeriod,
         uint256 initialProposalThreshold
-    ) internal onlyInitializing {
-        __Context_init_unchained();
-        __ERC165_init_unchained();
-        __IGovernor_init_unchained();
-        __GovernorSettings_init_unchained(initialVotingDelay, initialVotingPeriod, initialProposalThreshold);
-    }
-
-    function __GovernorSettings_init_unchained(
-        uint256 initialVotingDelay,
-        uint256 initialVotingPeriod,
-        uint256 initialProposalThreshold
-    ) internal onlyInitializing {
+    ) {
         _setVotingDelay(initialVotingDelay);
         _setVotingPeriod(initialVotingPeriod);
         _setProposalThreshold(initialProposalThreshold);
@@ -123,5 +111,4 @@ abstract contract GovernorSettingsUpgradeable is Initializable, GovernorUpgradea
         emit ProposalThresholdSet(_proposalThreshold, newProposalThreshold);
         _proposalThreshold = newProposalThreshold;
     }
-    uint256[47] private __gap;
 }

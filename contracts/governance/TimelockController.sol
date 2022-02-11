@@ -3,8 +3,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../access/AccessControlUpgradeable.sol";
-import "../proxy/utils/Initializable.sol";
+import "../access/AccessControl.sol";
 
 /**
  * @dev Contract module which acts as a timelocked controller. When set as the
@@ -21,7 +20,7 @@ import "../proxy/utils/Initializable.sol";
  *
  * _Available since v3.3._
  */
-contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeable {
+contract TimelockController is AccessControl {
     bytes32 public constant TIMELOCK_ADMIN_ROLE = keccak256("TIMELOCK_ADMIN_ROLE");
     bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
     bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
@@ -61,22 +60,11 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
     /**
      * @dev Initializes the contract with a given `minDelay`.
      */
-    function __TimelockController_init(
+    constructor(
         uint256 minDelay,
         address[] memory proposers,
         address[] memory executors
-    ) internal onlyInitializing {
-        __Context_init_unchained();
-        __ERC165_init_unchained();
-        __AccessControl_init_unchained();
-        __TimelockController_init_unchained(minDelay, proposers, executors);
-    }
-
-    function __TimelockController_init_unchained(
-        uint256 minDelay,
-        address[] memory proposers,
-        address[] memory executors
-    ) internal onlyInitializing {
+    ) {
         _setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(PROPOSER_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(EXECUTOR_ROLE, TIMELOCK_ADMIN_ROLE);
@@ -362,5 +350,4 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
         emit MinDelayChange(_minDelay, newDelay);
         _minDelay = newDelay;
     }
-    uint256[48] private __gap;
 }

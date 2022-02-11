@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "./GovernorUpgradeable.sol";
-import "./compatibility/GovernorCompatibilityBravoUpgradeable.sol";
-import "./extensions/GovernorVotesUpgradeable.sol";
-import "./extensions/GovernorVotesQuorumFractionUpgradeable.sol";
-import "./extensions/GovernorTimelockControlUpgradeable.sol";
+import "./governance/Governor.sol";
+import "./governance/compatibility/GovernorCompatibilityBravo.sol";
+import "./governance/extensions/GovernorVotes.sol";
+import "./governance/extensions/GovernorVotesQuorumFraction.sol";
+import "./governance/extensions/GovernorTimelockControl.sol";
 
 contract DocGovernor is
     Governor,
@@ -15,10 +15,10 @@ contract DocGovernor is
     GovernorTimelockControl
 {
     constructor(IVotes _token, TimelockController _timelock)
-        GovernorUpgradeable("DocGovernor")
-        GovernorVotesUpgradeable(_token)
-        GovernorVotesQuorumFractionUpgradeable(4)
-        GovernorTimelockControlUpgradeable(_timelock)
+        Governor("DocGovernor")
+        GovernorVotes(_token)
+        GovernorVotesQuorumFraction(4)
+        GovernorTimelockControl(_timelock)
     {}
 
     function votingDelay() public pure override returns (uint256) {
