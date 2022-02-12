@@ -8,4 +8,8 @@ contract Document is ERC721Upgradeable, IGovernee {
     function initialize() public {
         __ERC721_init("livedoc", "DOC");
     }
+
+    function getAddress() public view returns (address) {
+        return address(this);
+    }
 }

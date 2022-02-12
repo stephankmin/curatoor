@@ -14,12 +14,20 @@ contract DocGovernor is
     GovernorVotesQuorumFraction,
     GovernorTimelockControl
 {
-    constructor(IVotes _token, TimelockController _timelock)
+    Governee public _governee;
+
+    constructor(
+        IVotes _token,
+        TimelockController _timelock,
+        address governee
+    )
         Governor("DocGovernor")
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
         GovernorTimelockControl(_timelock)
-    {}
+    {
+        _governee = new Governee(governee);
+    }
 
     function votingDelay() public pure override returns (uint256) {
         return 6575; // 1 day
@@ -70,8 +78,18 @@ contract DocGovernor is
         override(Governor, GovernorCompatibilityBravo, IGovernor)
         returns (uint256)
     {
+        require(targets.length == 1, "Targets must contain one address");
+        require(
+            targets[0] == _governee.getAddress(),
+            "Can only propose changes to governee"
+        );
+
         return super.propose(targets, values, calldatas, description);
     }
+
+    // function propose(uint256 memory values, bytes memory data, string memory description) public virtual returns (uint256) {
+    //     return super.propose()
+    // }
 
     function _execute(
         uint256 proposalId,
@@ -80,6 +98,12 @@ contract DocGovernor is
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal override(Governor, GovernorTimelockControl) {
+        require(targets.length == 1, "Targets must contain one address");
+        require(
+            targets[0] == _governee.getAddress(),
+            "Can only propose changes to governee"
+        );
+
         super._execute(proposalId, targets, values, calldatas, descriptionHash);
     }
 
@@ -89,6 +113,12 @@ contract DocGovernor is
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal override(Governor, GovernorTimelockControl) returns (uint256) {
+        require(targets.length == 1, "Targets must contain one address");
+        require(
+            targets[0] == _governee.getAddress(),
+            "Can only propose changes to governee"
+        );
+
         return super._cancel(targets, values, calldatas, descriptionHash);
     }
 

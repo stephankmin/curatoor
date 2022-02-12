@@ -9,9 +9,9 @@ contract GovernanceERC20Token is ERC20Upgradeable, ERC20Permit, ERC20Votes {
     constructor()
         ERC20Upgradeable("Gov Token", "GOVTOK")
         ERC20Permit("Gov Token")
-    {}
-
-    // The functions below are overrides required by Solidity.
+    {
+        _mint(msg.sender, 1000);
+    }
 
     function _afterTokenTransfer(
         address from,
