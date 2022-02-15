@@ -14,7 +14,7 @@ contract DocGovernor is
     GovernorVotesQuorumFraction,
     GovernorTimelockControl
 {
-    Governee public _governee;
+    address public _governee;
 
     constructor(
         IVotes _token,
@@ -26,7 +26,7 @@ contract DocGovernor is
         GovernorVotesQuorumFraction(4)
         GovernorTimelockControl(_timelock)
     {
-        _governee = new Governee(governee);
+        _governee = governee;
     }
 
     function votingDelay() public pure override returns (uint256) {
@@ -87,10 +87,6 @@ contract DocGovernor is
         return super.propose(targets, values, calldatas, description);
     }
 
-    // function propose(uint256 memory values, bytes memory data, string memory description) public virtual returns (uint256) {
-    //     return super.propose()
-    // }
-
     function _execute(
         uint256 proposalId,
         address[] memory targets,
@@ -99,10 +95,7 @@ contract DocGovernor is
         bytes32 descriptionHash
     ) internal override(Governor, GovernorTimelockControl) {
         require(targets.length == 1, "Targets must contain one address");
-        require(
-            targets[0] == _governee.getAddress(),
-            "Can only propose changes to governee"
-        );
+        require(targets[0] == governee, "Can only propose changes to governee");
 
         super._execute(proposalId, targets, values, calldatas, descriptionHash);
     }
@@ -114,10 +107,7 @@ contract DocGovernor is
         bytes32 descriptionHash
     ) internal override(Governor, GovernorTimelockControl) returns (uint256) {
         require(targets.length == 1, "Targets must contain one address");
-        require(
-            targets[0] == _governee.getAddress(),
-            "Can only propose changes to governee"
-        );
+        require(targets[0] == governee, "Can only propose changes to governee");
 
         return super._cancel(targets, values, calldatas, descriptionHash);
     }
