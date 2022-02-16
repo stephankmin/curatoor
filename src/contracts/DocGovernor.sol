@@ -5,26 +5,19 @@ import "../../lib/@openzeppelin/contracts/governance/Governor.sol";
 import "../../lib/@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
 import "../../lib/@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
 import "../../lib/@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
-import "../../lib/@openzeppelin/contracts/governance/extensions/GovernorTimelockControl.sol";
 
 contract DocGovernor is
     Governor,
     GovernorVotes,
     GovernorCountingSimple,
-    GovernorVotesQuorumFraction,
-    GovernorTimelockControl
+    GovernorVotesQuorumFraction
 {
     address public governee;
 
-    constructor(
-        IVotes _token,
-        TimelockController _timelock,
-        address _governee
-    )
+    constructor(IVotes _token, address _governee)
         Governor("DocGovernor")
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
-        GovernorTimelockControl(_timelock)
     {
         governee = _governee;
     }
@@ -62,7 +55,7 @@ contract DocGovernor is
     function state(uint256 proposalId)
         public
         view
-        override(Governor, GovernorTimelockControl)
+        override(Governor)
         returns (ProposalState)
     {
         return super.state(proposalId);
@@ -73,7 +66,7 @@ contract DocGovernor is
         uint256[] memory values,
         bytes[] memory calldatas,
         string memory description
-    ) public override(Governor, IGovernor) returns (uint256) {
+    ) public override(Governor) returns (uint256) {
         require(targets.length == 1, "Targets must contain one address");
         require(targets[0] == governee, "Can only propose changes to governee");
 
@@ -86,7 +79,7 @@ contract DocGovernor is
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) internal override(Governor, GovernorTimelockControl) {
+    ) internal override(Governor) {
         require(targets.length == 1, "Targets must contain one address");
         require(targets[0] == governee, "Can only propose changes to governee");
 
@@ -98,26 +91,21 @@ contract DocGovernor is
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) internal override(Governor, GovernorTimelockControl) returns (uint256) {
+    ) internal override(Governor) returns (uint256) {
         require(targets.length == 1, "Targets must contain one address");
         require(targets[0] == governee, "Can only propose changes to governee");
 
         return super._cancel(targets, values, calldatas, descriptionHash);
     }
 
-    function _executor()
-        internal
-        view
-        override(Governor, GovernorTimelockControl)
-        returns (address)
-    {
+    function _executor() internal view override(Governor) returns (address) {
         return super._executor();
     }
 
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(Governor, GovernorTimelockControl)
+        override(Governor)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
