@@ -6,7 +6,7 @@ import "../contracts/Document.sol";
 import "../contracts/DocGovernor.sol";
 import "../contracts/GovernanceERC20Token.sol";
 
-contract ContractTest is DSTest {
+contract DocumentTest is DSTest {
     Document document;
     DocGovernor docgov;
     GovernanceERC20Token govtoken;
@@ -19,5 +19,9 @@ contract ContractTest is DSTest {
 
     function testExample() public {
         assertTrue(true);
+    }
+
+    function testConfig() public {
+        document.initialize("document", "DOC", address(docgov));
     }
 }
