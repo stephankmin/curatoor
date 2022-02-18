@@ -2,19 +2,28 @@
 pragma solidity 0.8.10;
 
 import "ds-test/test.sol";
-import "../contracts/Document.sol";
-import "../contracts/DocGovernor.sol";
-import "../contracts/GovernanceERC20Token.sol";
+import "../Document.sol";
+import "../DocGovernor.sol";
+import "../GovernanceERC20Token.sol";
+import "../DocProxy.sol";
 
 contract DocumentTest is DSTest {
+    GovernanceERC20Token govToken;
     Document document;
-    DocGovernor docgov;
-    GovernanceERC20Token govtoken;
+    DocGovernor docGovernor;
+    DocProxy docProxy;
+
+    // Arguments
+    string public name = "livedoc";
+    string public symbol = "DOC";
+    address public governor = address(docGovernor);
 
     function setUp() public {
-        govtoken = new GovernanceERC20Token();
+        govToken = new GovernanceERC20Token();
         document = new Document();
-        docgov = new DocGovernor(govtoken, address(document));
+        document.initialize(name, symbol, governor);
+        docGovernor = new DocGovernor(govToken, address(document));
+        docProxy = new DocProxy(address(document), "");
     }
 
     function testExample() public {
@@ -22,6 +31,18 @@ contract DocumentTest is DSTest {
     }
 
     function testConfig() public {
-        document.initialize("document", "DOC", address(docgov));
+        assertEq(
+            keccak256(abi.encodePacked(document.name())),
+            keccak256(abi.encodePacked(name))
+        );
+        assertEq(
+            keccak256(abi.encodePacked(document.symbol())),
+            keccak256(abi.encodePacked(symbol))
+        );
+        assertEq(document.governor(), governor);
+    }
+
+    function testMint() public {
+        assertTrue(document._minted());
     }
 }

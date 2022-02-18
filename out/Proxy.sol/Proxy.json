@@ -1,0 +1,20 @@
+{
+  "abi": [
+    {
+      "type": "receive"
+    },
+    {
+      "type": "fallback"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployed_bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  }
+}
