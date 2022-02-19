@@ -2,8 +2,9 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-contract Document is ERC721Upgradeable, IERC721Receiver {
+contract Document is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     string private name_;
 
     string private symbol_;
@@ -14,11 +15,12 @@ contract Document is ERC721Upgradeable, IERC721Receiver {
 
     uint256 public docHash;
 
-    // Events
-
+    // EVENTS
     event NewDocHash(uint256 docHash);
 
     event NewBaseURI(string baseURI);
+
+    event Mint(uint256 tokenId);
 
     modifier onlyGovernor() {
         require(
@@ -40,41 +42,28 @@ contract Document is ERC721Upgradeable, IERC721Receiver {
         _safeMint(address(this), 1);
     }
 
-    function _minted() public virtual returns (bool) {
+    // MINTING FUNCTIONS
+    function minted() public virtual returns (bool) {
         return super._exists(1);
     }
 
     function _safeMint(address to, uint256 tokenId) internal virtual override {
-        require(!_minted() && tokenId == 1, "Document: tokenId must be 1");
+        require(!minted() && tokenId == 1, "Document: tokenId must be 1");
         super._safeMint(to, tokenId);
+        emit Mint(tokenId);
     }
 
-    function _baseURI() internal view virtual override returns (string memory) {
-        return baseURI;
-    }
+    // METADATA FUNCTIONS
+    function setBaseURI(string memory _baseURI) public virtual onlyGovernor {
+        baseURI = _baseURI;
 
-    function setBaseURI(string memory _baseURI_) public virtual onlyGovernor {
-        baseURI = _baseURI_;
-
-        emit NewBaseURI(_baseURI_);
+        emit NewBaseURI(_baseURI);
     }
 
     function setNewDocHash(uint256 _docHash) internal virtual onlyGovernor {
         docHash = _docHash;
 
         emit NewDocHash(_docHash);
-    }
-
-    function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
-    ) external returns (bytes4) {
-        return
-            bytes4(
-                keccak256("onERC721Received(address,address,uint256,bytes)")
-            );
     }
 
     function tokenURI(uint256 tokenId)
@@ -91,4 +80,24 @@ contract Document is ERC721Upgradeable, IERC721Receiver {
                 ? string(abi.encodePacked(base, docHash))
                 : "";
     }
+
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4) {
+        return
+            bytes4(
+                keccak256("onERC721Received(address,address,uint256,bytes)")
+            );
+    }
+
+    // UPGRADE FUNCTIONS
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        virtual
+        override
+        onlyGovernor
+    {}
 }

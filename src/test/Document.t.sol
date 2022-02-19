@@ -26,11 +26,7 @@ contract DocumentTest is DSTest {
         docProxy = new DocProxy(address(document), "");
     }
 
-    function testExample() public {
-        assertTrue(true);
-    }
-
-    function testConfig() public {
+    function testInitializeConfig() public {
         assertEq(
             keccak256(abi.encodePacked(document.name())),
             keccak256(abi.encodePacked(name))
@@ -42,7 +38,7 @@ contract DocumentTest is DSTest {
         assertEq(document.governor(), governor);
     }
 
-    function testMint() public {
-        assertTrue(document._minted());
+    function testInitializeMint() public {
+        assertTrue(document.minted());
     }
 }
