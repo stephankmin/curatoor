@@ -33,11 +33,11 @@ contract Document is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     function initialize(
         string memory _name,
         string memory _symbol,
-        address governor_
+        address _governor
     ) public initializer {
         name_ = _name;
         symbol_ = _symbol;
-        governor = governor_;
+        governor = _governor;
         __ERC721_init(_name, _symbol);
         _safeMint(address(this), 1);
     }
@@ -54,13 +54,11 @@ contract Document is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     }
 
     // METADATA FUNCTIONS
-    function setBaseURI(string memory _baseURI) public virtual onlyGovernor {
-        baseURI = _baseURI;
-
-        emit NewBaseURI(_baseURI);
+    function _baseURI() internal view virtual override returns (string memory) {
+        return "https://testtest.com";
     }
 
-    function setNewDocHash(uint256 _docHash) internal virtual onlyGovernor {
+    function setNewDocHash(uint256 _docHash) public virtual onlyGovernor {
         docHash = _docHash;
 
         emit NewDocHash(_docHash);

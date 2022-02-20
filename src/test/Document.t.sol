@@ -7,22 +7,32 @@ import "../DocGovernor.sol";
 import "../GovernanceERC20Token.sol";
 import "../DocProxy.sol";
 
+interface CheatCodes {
+    function prank(address) external;
+
+    function expectRevert(bytes calldata) external;
+}
+
 contract DocumentTest is DSTest {
+    CheatCodes cheats = CheatCodes(HEVM_ADDRESS);
+
+    // Contract Instances
     GovernanceERC20Token govToken;
     Document document;
     DocGovernor docGovernor;
     DocProxy docProxy;
 
-    // Arguments
+    // Document Arguments
     string public name = "livedoc";
     string public symbol = "DOC";
-    address public governor = address(docGovernor);
+    address public governor;
 
     function setUp() public {
         govToken = new GovernanceERC20Token();
+        docGovernor = new DocGovernor(govToken);
+        governor = address(docGovernor);
         document = new Document();
         document.initialize(name, symbol, governor);
-        docGovernor = new DocGovernor(govToken, address(document));
         docProxy = new DocProxy(address(document), "");
     }
 
@@ -40,5 +50,35 @@ contract DocumentTest is DSTest {
 
     function testInitializeMint() public {
         assertTrue(document.minted());
+    }
+
+    function testSetNewDocHashRevert() public {
+        uint256 testHash = uint256(keccak256("This is a test hash"));
+        cheats.expectRevert(
+            "Only the governor contract can call this function"
+        );
+        document.setNewDocHash(testHash);
+    }
+
+    function testSetNewDocHashSuccess() public {
+        uint256 testHash = uint256(keccak256("This is a test hash"));
+        cheats.prank(address(governor));
+        document.setNewDocHash(testHash);
+        assertEq(document.docHash(), testHash);
+    }
+
+    function testSetBaseURIRevert() public {
+        string memory testBaseURI = "https://s3.amazonaws.com/testtest";
+        cheats.expectRevert(
+            "Only the governor contract can call this function"
+        );
+        document.setBaseURI(testBaseURI);
+    }
+
+    function testSetBaseURISuccess() public {
+        string memory testBaseURI = "https://s3.amazonaws.com/testtest";
+        cheats.prank(address(governor));
+        document.setBaseURI(testBaseURI);
+        assertEq(document.baseURI(), testBaseURI);
     }
 }

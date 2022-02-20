@@ -14,12 +14,27 @@ contract DocGovernor is
 {
     address public governee;
 
-    constructor(IVotes _token, address _governee)
+    address public owner;
+
+    event NewGovernee(address governee);
+
+    constructor(IVotes _token)
         Governor("DocGovernor")
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
     {
+        owner == msg.sender;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
+    }
+
+    function setGovernee(address _governee) private onlyOwner {
         governee = _governee;
+
+        emit NewGovernee(_governee);
     }
 
     function votingDelay() public pure override returns (uint256) {
