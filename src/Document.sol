@@ -5,22 +5,38 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 contract Document is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
-    string private name_;
+    string public constant name = "Documents";
 
-    string private symbol_;
+    string public constant symbol = "DOCS";
 
-    string private baseURI;
+    string internal baseURI;
 
-    address public governor;
+    mapping (uint256 => Document) public documents;
 
-    uint256 public docHash;
+    mapping (uint256 => mappping(uint256 => Version)) public documentIdToVersion;
+
+    struct Document {
+        address governor,
+        uint256 latestHash,
+        uint256 latestVersion
+    }
+
+    struct Version {
+        uint256 documentId,
+        uint256 tokenId,
+        uint256 contentHash
+    }
+
+    uint256 private nextDocumentId;
+
+    uint256 private nextTokenId;
 
     // EVENTS
-    event NewDocHash(uint256 docHash);
+    event DocumentCreated(address governor, uint256 nextDocumentId)
+
+    event VersionMinted(uint256 documentId, uint256 contentHash, uint256 nextTokenId);
 
     event NewBaseURI(string baseURI);
-
-    event Mint(uint256 tokenId);
 
     modifier onlyGovernor() {
         require(
@@ -43,9 +59,7 @@ contract Document is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     }
 
     // MINTING FUNCTIONS
-    function minted() public virtual returns (bool) {
-        return super._exists(1);
-    }
+    function createDocument(address governor, )
 
     function _safeMint(address to, uint256 tokenId) internal virtual override {
         require(!minted() && tokenId == 1, "Document: tokenId must be 1");
