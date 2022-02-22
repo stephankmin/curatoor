@@ -67,18 +67,9 @@ contract DocumentTest is DSTest {
         assertEq(document.docHash(), testHash);
     }
 
-    function testSetBaseURIRevert() public {
-        string memory testBaseURI = "https://s3.amazonaws.com/testtest";
-        cheats.expectRevert(
-            "Only the governor contract can call this function"
-        );
-        document.setBaseURI(testBaseURI);
-    }
-
-    function testSetBaseURISuccess() public {
-        string memory testBaseURI = "https://s3.amazonaws.com/testtest";
+    function testTokenURI() public {
+        uint256 testHash = uint256(keccak256("This is a test hash"));
         cheats.prank(address(governor));
-        document.setBaseURI(testBaseURI);
-        assertEq(document.baseURI(), testBaseURI);
+        document.setNewDocHash(testHash);
     }
 }
