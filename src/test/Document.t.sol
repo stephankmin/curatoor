@@ -2,7 +2,7 @@
 pragma solidity 0.8.10;
 
 import "ds-test/test.sol";
-import "../Document.sol";
+import "../Documents.sol";
 import "../DocGovernor.sol";
 import "../GovernanceERC20Token.sol";
 import "../DocProxy.sol";
@@ -18,7 +18,7 @@ contract DocumentTest is DSTest {
 
     // Contract Instances
     GovernanceERC20Token govToken;
-    Document document;
+    Documents document;
     DocGovernor docGovernor;
     DocProxy docProxy;
 
