@@ -1,15 +1,5 @@
-# Basic Sample Hardhat Project
+# On-Chain Governance for NFT Minting and Metadata
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+Governance protocol allowing participants to vote on mints and token metadata for NFT collections with an ERC-20.
 
-Try running some of the following tasks:
-
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
-```
+The protocol uses OpenZeppelin governance contracts and borrows heavily from Mirror.xyz's Editions v1.
