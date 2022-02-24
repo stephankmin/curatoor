@@ -22,17 +22,12 @@ contract DocumentTest is DSTest {
     DocGovernor docGovernor;
     DocProxy docProxy;
 
-    // Document Arguments
-    string public name = "livedoc";
-    string public symbol = "DOC";
-    address public governor;
-
     function setUp() public {
         govToken = new GovernanceERC20Token();
         docGovernor = new DocGovernor(govToken);
-        governor = address(docGovernor);
-        document = new Document();
-        document.initialize(name, symbol, governor);
+        address governor = address(docGovernor);
+        document = new Documents();
+        document.initialize(governor);
         docProxy = new DocProxy(address(document), "");
     }
 

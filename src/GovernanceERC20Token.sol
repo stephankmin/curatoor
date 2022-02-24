@@ -6,9 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
 contract GovernanceERC20Token is ERC20, ERC20Permit, ERC20Votes {
-    constructor() ERC20("Gov Token", "GOVTOK") ERC20Permit("Gov Token") {
-        _mint(msg.sender, 1000);
-    }
+    constructor() ERC20("Gov Token", "GOVTOK") ERC20Permit("Gov Token") {}
 
     function _afterTokenTransfer(
         address from,
@@ -30,5 +28,15 @@ contract GovernanceERC20Token is ERC20, ERC20Permit, ERC20Votes {
         override(ERC20, ERC20Votes)
     {
         super._burn(account, amount);
+    }
+
+    function _maxSupply() internal pure override returns (uint224) {
+        return 1000;
+    }
+
+    function mintToken(uint256 amount) public {
+        require(amount <= 100);
+
+        _mint(msg.sender, amount);
     }
 }

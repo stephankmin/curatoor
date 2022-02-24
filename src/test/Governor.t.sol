@@ -55,4 +55,6 @@ contract DocumentTest is DSTest {
         documents = new Documents();
         documents.initialize(testBaseURI);
     }
+
+    function testPropose() public {}
 }
