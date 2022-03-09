@@ -1,14 +1,21 @@
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/governance/IGovernor.sol";
+import "../lib/@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "../lib/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "../lib/@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "../lib/@openzeppelin/contracts/governance/IGovernor.sol";
+import {ERC165Checker} from "../lib/@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
+    using ERC165Checker for address;
+
+    error NonGovernor(address account);
+
     string public constant _name = "Documents";
 
     string public constant _symbol = "DOCS";
+
+    bytes4 public constant GOVERNOR_INTERFACE_ID = type(IGovernor).interfaceId;
 
     string internal baseURI;
 
@@ -17,8 +24,6 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     uint256 private nextTokenId;
 
     address public admin;
-
-    bytes4 public immutable GOVERNOR_INTERFACE_ID = type(IGovernor).interfaceId;
 
     mapping(uint256 => Document) public documents;
 
@@ -68,10 +73,8 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
 
     // MINTING FUNCTIONS
     function createDocument(address governor) external virtual {
-        require(
-            IGovernor(governor).supportsInterface(GOVERNOR_INTERFACE_ID),
-            "New governor does not implement governor interface"
-        );
+        if (!governor.supportsInterface(GOVERNOR_INTERFACE_ID))
+            revert NonGovernor(governor);
 
         documents[nextDocumentId] = Document({
             governor: governor,
@@ -80,7 +83,7 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
 
         emit DocumentCreated(governor, nextDocumentId);
 
-        nextDocumentId++;
+        ++nextDocumentId;
     }
 
     function mintVersion(
@@ -101,7 +104,7 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
 
         emit VersionMinted(documentId, tokenId, contentHash);
 
-        nextTokenId++;
+        ++nextTokenId;
     }
 
     function tokenURI(uint256 tokenId)
@@ -130,10 +133,9 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
             documents[documentId].governor != newGovernor,
             "New governor must be different from current governor"
         );
-        require(
-            IGovernor(newGovernor).supportsInterface(GOVERNOR_INTERFACE_ID),
-            "New governor does not implement governor interface"
-        );
+
+        if (!newGovernor.supportsInterface(GOVERNOR_INTERFACE_ID))
+            revert NonGovernor(newGovernor);
 
         Document storage document = documents[documentId];
         document.governor = newGovernor;
@@ -150,7 +152,7 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
         uint256 temp = value;
         uint256 digits;
         while (temp != 0) {
-            digits++;
+            ++digits;
             temp /= 10;
         }
         bytes memory buffer = new bytes(digits);
