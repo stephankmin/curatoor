@@ -2,6 +2,7 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/governance/Governor.sol";
+import "@openzeppelin/contracts/governance/IGovernor.sol";
 import "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
 import "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
 import "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
@@ -115,14 +116,5 @@ contract DocGovernor is
 
     function _executor() internal view override(Governor) returns (address) {
         return super._executor();
-    }
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(Governor)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
     }
 }
