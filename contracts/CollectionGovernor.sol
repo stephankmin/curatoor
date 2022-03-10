@@ -7,12 +7,14 @@ import "../lib/@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
 import "../lib/@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
 import "../lib/@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
 
-contract DocGovernor is
+contract CollectionGovernor is
     Governor,
     GovernorVotes,
     GovernorCountingSimple,
     GovernorVotesQuorumFraction
 {
+    error NotGovernee();
+
     address public governee;
 
     address public owner;
@@ -20,7 +22,7 @@ contract DocGovernor is
     event NewGovernee(address governee);
 
     constructor(IVotes _token)
-        Governor("DocGovernor")
+        Governor("CollectionGovernor")
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
     {
@@ -83,8 +85,8 @@ contract DocGovernor is
         bytes[] memory calldatas,
         string memory description
     ) public override(Governor) returns (uint256) {
-        require(targets.length == 1, "Targets must contain one address");
-        require(targets[0] == governee, "Can only propose changes to governee");
+        if (targets.length != 1 && targets[0] != governee)
+            revert NotGovernee();
 
         return super.propose(targets, values, calldatas, description);
     }
@@ -96,8 +98,8 @@ contract DocGovernor is
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal override(Governor) {
-        require(targets.length == 1, "Targets must contain one address");
-        require(targets[0] == governee, "Can only propose changes to governee");
+        if (targets.length != 1 && targets[0] != governee)
+            revert NotGovernee();
 
         super._execute(proposalId, targets, values, calldatas, descriptionHash);
     }
@@ -108,8 +110,8 @@ contract DocGovernor is
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal override(Governor) returns (uint256) {
-        require(targets.length == 1, "Targets must contain one address");
-        require(targets[0] == governee, "Can only propose changes to governee");
+        if (targets.length != 1 && targets[0] != governee)
+            revert NotGovernee();
 
         return super._cancel(targets, values, calldatas, descriptionHash);
     }
