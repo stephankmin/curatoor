@@ -1,5 +1,8 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { Contract, ContractTransaction, Signer, BigNumber } from 'ethers';
+
+import type { Collections, DocGovernor, GovernanceERC20Token } from '../typechain';
 
 describe("Greeter", function () {
   it("Should return the new greeting once it's changed", async function () {
@@ -18,6 +21,10 @@ describe("Greeter", function () {
   });
 });
 
-describe("DocGovernor", function () {
-  
+describe("Collections", function () {
+  let provider: typeof ethers.provider
+  let allSigners: Signer[]
+  let signer: Signer
+  let account: string
+  let allAccounts: string[]
 })

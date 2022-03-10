@@ -6,14 +6,14 @@ import "../lib/@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "../lib/@openzeppelin/contracts/governance/IGovernor.sol";
 import {ERC165Checker} from "../lib/@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
+contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     using ERC165Checker for address;
 
     error NonGovernor(address account);
 
-    string public constant _name = "Documents";
+    string public constant _name = "Collections";
 
-    string public constant _symbol = "DOCS";
+    string public constant _symbol = "COLL";
 
     bytes4 public constant GOVERNOR_INTERFACE_ID = type(IGovernor).interfaceId;
 
@@ -25,13 +25,13 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
 
     address public admin;
 
-    mapping(uint256 => Document) public documents;
+    mapping(uint256 => Collection) public collections;
 
     mapping(uint256 => uint256) public tokenToDocument;
 
-    mapping(uint256 => mapping(uint256 => Version)) public documentVersions;
+    mapping(uint256 => mapping(uint256 => Version)) public collectionVersions;
 
-    struct Document {
+    struct Collection {
         address governor;
         uint256 latestVersionId;
     }
@@ -42,7 +42,7 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     }
 
     // EVENTS
-    event DocumentCreated(address governor, uint256 documentId);
+    event CollectionCreated(address governor, uint256 documentId);
 
     event VersionMinted(
         uint256 documentId,
@@ -52,7 +52,7 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
 
     modifier onlyGovernor(uint256 documentId) {
         require(
-            msg.sender == documents[documentId].governor,
+            msg.sender == collections[documentId].governor,
             "Only the governor contract can call this function"
         );
         _;
@@ -72,16 +72,16 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     }
 
     // MINTING FUNCTIONS
-    function createDocument(address governor) external virtual {
+    function createCollection(address governor) external virtual {
         if (!governor.supportsInterface(GOVERNOR_INTERFACE_ID))
             revert NonGovernor(governor);
 
-        documents[nextDocumentId] = Document({
+        collections[nextDocumentId] = Collection({
             governor: governor,
             latestVersionId: 0
         });
 
-        emit DocumentCreated(governor, nextDocumentId);
+        emit CollectionCreated(governor, nextDocumentId);
 
         ++nextDocumentId;
     }
@@ -91,11 +91,11 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
         uint256 tokenId,
         uint256 contentHash
     ) external virtual onlyGovernor(documentId) {
-        uint256 versionId = documents[documentId].latestVersionId + 1;
+        uint256 versionId = collections[documentId].latestVersionId + 1;
 
-        address recipient = documents[documentId].governor;
+        address recipient = collections[documentId].governor;
 
-        documentVersions[documentId][versionId] = Version({
+        collectionVersions[documentId][versionId] = Version({
             tokenId: nextTokenId,
             contentHash: contentHash
         });
@@ -130,14 +130,14 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
         onlyGovernor(documentId)
     {
         require(
-            documents[documentId].governor != newGovernor,
+            collections[documentId].governor != newGovernor,
             "New governor must be different from current governor"
         );
 
         if (!newGovernor.supportsInterface(GOVERNOR_INTERFACE_ID))
             revert NonGovernor(newGovernor);
 
-        Document storage document = documents[documentId];
+        Collection storage document = collections[documentId];
         document.governor = newGovernor;
     }
 
@@ -169,7 +169,7 @@ contract Documents is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
         address from,
         uint256 tokenId,
         bytes calldata data
-    ) external returns (bytes4) {
+    ) external override returns (bytes4) {
         return
             bytes4(
                 keccak256("onERC721Received(address,address,uint256,bytes)")
