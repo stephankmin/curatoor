@@ -5,6 +5,8 @@ import "../lib/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "../lib/@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "../lib/@openzeppelin/contracts/governance/IGovernor.sol";
 import {ERC165Checker} from "../lib/@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import {Clones} from "../lib/@openzeppelin/contracts/proxy/Clones.sol";
+import {CollectionGovernor} from "./CollectionGovernor.sol";
 
 contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     using ERC165Checker for address;
@@ -15,11 +17,11 @@ contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
 
     string public constant _symbol = "COLL";
 
-    bytes4 public constant GOVERNOR_INTERFACE_ID = type(IGovernor).interfaceId;
+    address public immutable governorImplementation;
 
     string internal baseURI;
 
-    uint256 private nextDocumentId;
+    uint256 private nextCollectionId;
 
     uint256 private nextTokenId;
 
@@ -32,6 +34,7 @@ contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     mapping(uint256 => mapping(uint256 => Version)) public collectionVersions;
 
     struct Collection {
+        string name;
         address governor;
         uint256 latestVersionId;
     }
@@ -69,21 +72,26 @@ contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     function initialize(string memory _baseURI) public initializer {
         baseURI = _baseURI;
         admin = msg.sender;
+        governorImplementation = address(new CollectionGovernor());
     }
 
-    // MINTING FUNCTIONS
-    function createCollection(address governor) external virtual {
-        if (!governor.supportsInterface(GOVERNOR_INTERFACE_ID))
-            revert NonGovernor(governor);
+    function createCollection(string memory collectionName) external virtual returns (address governor){
+        // hash collectionName and msg.sender for governor clone salt
+        bytes32 collectionNameHash = keccak256(abi.encodePacked(msg.sender, collectionName));
+        
+        // create deterministic clone of collection governor
+        governor = Clones.cloneDeterministic(governorImplementation, collectionNameHash);
 
-        collections[nextDocumentId] = Collection({
+        // store collection data
+        collections[nextCollectionId] = Collection({
+            name: collectionName,
             governor: governor,
             latestVersionId: 0
         });
 
-        emit CollectionCreated(governor, nextDocumentId);
+        emit CollectionCreated(collectionName, governor, nextCollectionId);
 
-        ++nextDocumentId;
+        ++nextCollectionId;
     }
 
     function mintVersion(

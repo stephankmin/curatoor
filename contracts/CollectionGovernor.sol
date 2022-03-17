@@ -15,29 +15,24 @@ contract CollectionGovernor is
 {
     error NotGovernee();
 
+    error NotOwner(address sender);
+
     address public governee;
 
     address public owner;
 
-    event NewGovernee(address governee);
-
-    constructor(IVotes _token)
+    constructor(address _governee, IVotes _token)
         Governor("CollectionGovernor")
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
     {
         owner == msg.sender;
+        governee = _governee;
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner);
+        if (msg.sender != owner) revert NotOwner(msg.sender);
         _;
-    }
-
-    function setGovernee(address _governee) private onlyOwner {
-        governee = _governee;
-
-        emit NewGovernee(_governee);
     }
 
     function votingDelay() public pure override returns (uint256) {
