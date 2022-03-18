@@ -41,16 +41,16 @@ contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
 
     struct Version {
         uint256 tokenId;
-        uint256 contentHash;
+        bytes32 contentHash;
     }
 
     // EVENTS
-    event CollectionCreated(address governor, uint256 documentId);
+    event CollectionCreated(string name, address governor, uint256 documentId);
 
     event VersionMinted(
         uint256 documentId,
         uint256 tokenId,
-        uint256 contentHash
+        bytes32 contentHash
     );
 
     modifier onlyGovernor(uint256 documentId) {
@@ -95,24 +95,27 @@ contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     }
 
     function mintVersion(
-        uint256 documentId,
-        uint256 tokenId,
-        uint256 contentHash
-    ) external virtual onlyGovernor(documentId) {
-        uint256 versionId = collections[documentId].latestVersionId + 1;
+        uint256 collectionId,
+        bytes32 contentHash
+    ) external virtual onlyGovernor(collectionId) {
+        uint256 versionId = collections[collectionId].latestVersionId + 1;
 
-        address recipient = collections[documentId].governor;
+        address recipient = collections[collectionId].governor;
 
-        collectionVersions[documentId][versionId] = Version({
+        collectionVersions[collectionId][versionId] = Version({
             tokenId: nextTokenId,
             contentHash: contentHash
         });
 
         _safeMint(recipient, nextTokenId);
 
-        emit VersionMinted(documentId, tokenId, contentHash);
+        emit VersionMinted(collectionId, nextTokenId, contentHash);
 
         ++nextTokenId;
+    }
+
+    function updateVersion(uint256 collectionId, uint256 tokenId, bytes32 contentHash) external virtual onlyGovernor(collectionId) {
+
     }
 
     function tokenURI(uint256 tokenId)
@@ -141,9 +144,6 @@ contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
             collections[documentId].governor != newGovernor,
             "New governor must be different from current governor"
         );
-
-        if (!newGovernor.supportsInterface(GOVERNOR_INTERFACE_ID))
-            revert NonGovernor(newGovernor);
 
         Collection storage document = collections[documentId];
         document.governor = newGovernor;
