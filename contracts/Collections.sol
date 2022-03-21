@@ -35,7 +35,7 @@ contract Collections is ERC721Upgradeable, IERC721Receiver {
 
     mapping(uint256 => Collection) public collections;
 
-    mapping(uint256 => uint256) public tokenToDocument;
+    mapping(uint256 => uint256) public tokenToCollection;
 
     mapping(uint256 => mapping(uint256 => Version)) public collectionVersions;
 
