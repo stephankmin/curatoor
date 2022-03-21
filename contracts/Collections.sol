@@ -7,17 +7,23 @@ import "../lib/@openzeppelin/contracts/governance/IGovernor.sol";
 import {ERC165Checker} from "../lib/@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {Clones} from "../lib/@openzeppelin/contracts/proxy/Clones.sol";
 import {CollectionGovernor} from "./CollectionGovernor.sol";
+import {GovernanceERC20Token} from "./GovernanceERC20Token.sol";
+import {IVotes} from "../lib/@openzeppelin/contracts/governance/utils/IVotes.sol";
 
-contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
+contract Collections is ERC721Upgradeable, IERC721Receiver {
     using ERC165Checker for address;
 
     error NonGovernor(address account);
+
+    error NonexistantCollection();
 
     string public constant _name = "Collections";
 
     string public constant _symbol = "COLL";
 
     address public immutable governorImplementation;
+
+    IVotes public immutable governanceTokenImplementation;
 
     string internal baseURI;
 
@@ -69,13 +75,14 @@ contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
         _;
     }
 
-    function initialize(string memory _baseURI) public initializer {
+    constructor(string memory _baseURI) {
         baseURI = _baseURI;
         admin = msg.sender;
-        governorImplementation = address(new CollectionGovernor());
+        governanceTokenImplementation = IVotes(new GovernanceERC20Token());
+        governorImplementation = address(new CollectionGovernor(governanceTokenImplementation));
     }
 
-    function createCollection(string memory collectionName) external virtual returns (address governor){
+    function createCollection(string memory collectionName) external virtual returns (address governor) {
         // hash collectionName and msg.sender for governor clone salt
         bytes32 collectionNameHash = keccak256(abi.encodePacked(msg.sender, collectionName));
         
@@ -115,7 +122,7 @@ contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
     }
 
     function updateVersion(uint256 collectionId, uint256 tokenId, bytes32 contentHash) external virtual onlyGovernor(collectionId) {
-
+        
     }
 
     function tokenURI(uint256 tokenId)
@@ -183,12 +190,4 @@ contract Collections is ERC721Upgradeable, IERC721Receiver, UUPSUpgradeable {
                 keccak256("onERC721Received(address,address,uint256,bytes)")
             );
     }
-
-    // UPGRADE FUNCTIONS
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        virtual
-        override
-        onlyAdmin
-    {}
 }
