@@ -25,6 +25,8 @@ contract Collections is ERC721Upgradeable, IERC721Receiver {
 
     IVotes public immutable governanceTokenImplementation;
 
+    address public immutable governanceTokenImplementationAddress;
+
     string internal baseURI;
 
     uint256 private nextCollectionId;
@@ -42,6 +44,7 @@ contract Collections is ERC721Upgradeable, IERC721Receiver {
     struct Collection {
         string name;
         address governor;
+        address governanceToken;
         uint256 latestVersionId;
     }
 
@@ -51,17 +54,17 @@ contract Collections is ERC721Upgradeable, IERC721Receiver {
     }
 
     // EVENTS
-    event CollectionCreated(string name, address governor, uint256 documentId);
+    event CollectionCreated(string name, address governor, uint256 collectionId);
 
     event VersionMinted(
-        uint256 documentId,
+        uint256 collectionId,
         uint256 tokenId,
         bytes32 contentHash
     );
 
-    modifier onlyGovernor(uint256 documentId) {
+    modifier onlyGovernor(uint256 collectionId) {
         require(
-            msg.sender == collections[documentId].governor,
+            msg.sender == collections[collectionId].governor,
             "Only the governor contract can call this function"
         );
         _;
@@ -79,6 +82,7 @@ contract Collections is ERC721Upgradeable, IERC721Receiver {
         baseURI = _baseURI;
         admin = msg.sender;
         governanceTokenImplementation = IVotes(new GovernanceERC20Token());
+        governanceTokenImplementationAddress = address(governanceTokenImplementation);
         governorImplementation = address(new CollectionGovernor(governanceTokenImplementation));
     }
 
@@ -86,12 +90,16 @@ contract Collections is ERC721Upgradeable, IERC721Receiver {
         // hash collectionName and msg.sender for governor clone salt
         bytes32 collectionNameHash = keccak256(abi.encodePacked(msg.sender, collectionName));
         
-        // create deterministic clone of collection governor
+        // create clone of collection governance token
+        address governanceToken = Clones.cloneDeterministic(governanceTokenImplementationAddress, collectionNameHash);
+
+        // create clone of collection governor
         governor = Clones.cloneDeterministic(governorImplementation, collectionNameHash);
 
         // store collection data
         collections[nextCollectionId] = Collection({
             name: collectionName,
+            governanceToken: governanceToken,
             governor: governor,
             latestVersionId: 0
         });
@@ -136,25 +144,25 @@ contract Collections is ERC721Upgradeable, IERC721Receiver {
             string(
                 abi.encodePacked(
                     baseURI,
-                    _toString(tokenToDocument[tokenId]),
+                    _toString(tokenToCollection[tokenId]),
                     "/",
                     _toString(tokenId)
                 )
             );
     }
 
-    function transferGovernance(uint256 documentId, address newGovernor)
-        external
-        onlyGovernor(documentId)
-    {
-        require(
-            collections[documentId].governor != newGovernor,
-            "New governor must be different from current governor"
-        );
+    // function transferGovernance(uint256 collectionId, address newGovernor)
+    //     external
+    //     onlyGovernor(collectionId)
+    // {
+    //     require(
+    //         collections[documentId].governor != newGovernor,
+    //         "New governor must be different from current governor"
+    //     );
 
-        Collection storage document = collections[documentId];
-        document.governor = newGovernor;
-    }
+    //     Collection storage document = collections[documentId];
+    //     document.governor = newGovernor;
+    // }
 
     // From https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Strings.sol
     function _toString(uint256 value) internal pure returns (string memory) {

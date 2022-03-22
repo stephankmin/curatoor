@@ -21,12 +21,12 @@ contract CollectionGovernor is
 
     address public owner;
 
-    constructor(address _owner, IVotes _token)
+    constructor(IVotes _token)
         Governor("CollectionGovernor")
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
     {
-        owner = _owner;
+        // can only execute function calls to Collections.sol
         governee = msg.sender;
     }
 
