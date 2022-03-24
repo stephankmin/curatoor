@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-import "../lib/@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "../lib/@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "../lib/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "../lib/@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "../lib/@openzeppelin/contracts/governance/IGovernor.sol";
@@ -10,16 +10,12 @@ import {CollectionGovernor} from "./CollectionGovernor.sol";
 import {GovernanceERC20Token} from "./GovernanceERC20Token.sol";
 import {IVotes} from "../lib/@openzeppelin/contracts/governance/utils/IVotes.sol";
 
-contract Collections is ERC721Upgradeable, IERC721Receiver {
+contract Collection is ERC721, IERC721Receiver {
     using ERC165Checker for address;
 
     error NonGovernor(address account);
 
     error NonexistantCollection();
-
-    string public constant _name = "Collections";
-
-    string public constant _symbol = "COLL";
 
     address public immutable governorImplementation;
 
@@ -43,9 +39,11 @@ contract Collections is ERC721Upgradeable, IERC721Receiver {
 
     struct Collection {
         string name;
-        address governor;
-        address governanceToken;
-        uint256 latestVersionId;
+        string symbol;
+        address collectionAddress;
+        address governorAddress;
+        address governanceTokenAddress;
+        uint256 latestTokenId;
     }
 
     struct Version {
@@ -78,7 +76,7 @@ contract Collections is ERC721Upgradeable, IERC721Receiver {
         _;
     }
 
-    constructor(string memory _baseURI) {
+    constructor(string memory _name, string memory _symbol, string memory _baseURI) ERC721(_name, _symbol) {
         baseURI = _baseURI;
         admin = msg.sender;
         governanceTokenImplementation = IVotes(new GovernanceERC20Token());
