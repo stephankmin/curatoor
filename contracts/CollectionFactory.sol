@@ -14,26 +14,29 @@ contract CollectionFactory {
 
     uint256 private nextCollectionId;
 
+    // Upgradeable Beacon that stores the address for the implementation of a Collection ERC721
     address public collectionUpgradeableBeacon;
 
+    // Upgradeable Beacon that stores the address for the implementation of a Collection Governor
     address public governorUpgradeableBeacon;
 
+    // Upgradeable Beacon that stores the address for the implementation of a Collection Governance Token
     address public governanceTokenUpgradeableBeacon;
 
-    constructor(address _collectionImplementation, address _governorImplementation, address _governanceTokenImplementation) {
-        collectionUpgradeableBeacon = address(new UpgradeableBeacon(_collectionImplementation));
-        governorUpgradeableBeacon = address(new UpgradeableBeacon(_governorImplementation));
-        governanceTokenUpgradeableBeacon = address(new UpgradeableBeacon(_governanceTokenImplementation));
+    constructor(address _collectionUpgradeableBeacon, address _governorUpgradeableBeacon, address _governanceTokenUpgradeableBeacon) {
+        collectionUpgradeableBeacon = _collectionUpgradeableBeacon;
+        governorUpgradeableBeacon = _governorUpgradeableBeacon;
+        governanceTokenUpgradeableBeacon = _governanceTokenUpgradeableBeacon;
     }
     
     function createCollection(string memory name, string memory symbol) external {
-        // hash of collection name and symbol to create deterministic clone addresses
-        bytes32 collectionSalt = keccak256(abi.encodePacked(msg.sender, name, symbol));
-
+        // deploys a Beacon Proxy pointing to the Upgradeable Beacon for a Collection ERC721
         BeaconProxy collectionBeaconProxy = new BeaconProxy(collectionUpgradeableBeacon, "");
 
+        // deploys a Beacon Proxy pointing to the Upgradeable Beacon for a Collection Governor
         BeaconProxy governorBeaconProxy = new BeaconProxy(governorUpgradeableBeacon, "");
 
+        // deploys a Beacon Proxy pointing to the Upgradeable Beacon for a Collection Governance Token
         BeaconProxy governanceTokenBeaconProxy = new BeaconProxy(governanceTokenUpgradeableBeacon, "");
 
         collections[nextCollectionId] = Collection({
@@ -44,7 +47,7 @@ contract CollectionFactory {
             governanceTokenAddress: address(governanceTokenBeaconProxy)
         });
 
-        emit CollectionCreated(name, collectionAddress, nextCollectionId);
+        emit CollectionCreated(name, address(collectionBeaconProxy), nextCollectionId);
 
         ++nextCollectionId;
     }
