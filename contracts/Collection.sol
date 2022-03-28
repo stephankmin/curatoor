@@ -17,39 +17,13 @@ contract Collection is ERC721, IERC721Receiver {
 
     error NonexistantCollection();
 
-    address public immutable governorImplementation;
-
-    IVotes public immutable governanceTokenImplementation;
-
-    address public immutable governanceTokenImplementationAddress;
+    address public governor;
 
     string internal baseURI;
 
     uint256 private nextCollectionId;
 
     uint256 private nextTokenId;
-
-    address public admin;
-
-    mapping(uint256 => Collection) public collections;
-
-    mapping(uint256 => uint256) public tokenToCollection;
-
-    mapping(uint256 => mapping(uint256 => Version)) public collectionVersions;
-
-    struct Collection {
-        string name;
-        string symbol;
-        address collectionAddress;
-        address governorAddress;
-        address governanceTokenAddress;
-        uint256 latestTokenId;
-    }
-
-    struct Version {
-        uint256 tokenId;
-        bytes32 contentHash;
-    }
 
     // EVENTS
     event CollectionCreated(string name, address governor, uint256 collectionId);
@@ -62,16 +36,8 @@ contract Collection is ERC721, IERC721Receiver {
 
     modifier onlyGovernor(uint256 collectionId) {
         require(
-            msg.sender == collections[collectionId].governor,
-            "Only the governor contract can call this function"
-        );
-        _;
-    }
-
-    modifier onlyAdmin() {
-        require(
-            msg.sender == admin,
-            "Only the admin of this contract can call this function"
+            msg.sender == governor,
+            "Only the governor can call this function"
         );
         _;
     }
@@ -84,52 +50,25 @@ contract Collection is ERC721, IERC721Receiver {
         governorImplementation = address(new CollectionGovernor(governanceTokenImplementation));
     }
 
-    function createCollection(string memory collectionName) external virtual returns (address governor) {
-        // hash collectionName and msg.sender for governor clone salt
-        bytes32 collectionNameHash = keccak256(abi.encodePacked(msg.sender, collectionName));
-        
-        // create clone of collection governance token
-        address governanceToken = Clones.cloneDeterministic(governanceTokenImplementationAddress, collectionNameHash);
+    // function mintVersion(
+    //     uint256 collectionId,
+    //     bytes32 contentHash
+    // ) external virtual onlyGovernor(collectionId) {
+    //     uint256 versionId = collections[collectionId].latestVersionId + 1;
 
-        // create clone of collection governor
-        governor = Clones.cloneDeterministic(governorImplementation, collectionNameHash);
+    //     address recipient = collections[collectionId].governor;
 
-        // store collection data
-        collections[nextCollectionId] = Collection({
-            name: collectionName,
-            governanceToken: governanceToken,
-            governor: governor,
-            latestVersionId: 0
-        });
+    //     collectionVersions[collectionId][versionId] = Version({
+    //         tokenId: nextTokenId,
+    //         contentHash: contentHash
+    //     });
 
-        emit CollectionCreated(collectionName, governor, nextCollectionId);
+    //     _safeMint(recipient, nextTokenId);
 
-        ++nextCollectionId;
-    }
+    //     emit VersionMinted(collectionId, nextTokenId, contentHash);
 
-    function mintVersion(
-        uint256 collectionId,
-        bytes32 contentHash
-    ) external virtual onlyGovernor(collectionId) {
-        uint256 versionId = collections[collectionId].latestVersionId + 1;
-
-        address recipient = collections[collectionId].governor;
-
-        collectionVersions[collectionId][versionId] = Version({
-            tokenId: nextTokenId,
-            contentHash: contentHash
-        });
-
-        _safeMint(recipient, nextTokenId);
-
-        emit VersionMinted(collectionId, nextTokenId, contentHash);
-
-        ++nextTokenId;
-    }
-
-    function updateVersion(uint256 collectionId, uint256 tokenId, bytes32 contentHash) external virtual onlyGovernor(collectionId) {
-        
-    }
+    //     ++nextTokenId;
+    // }
 
     function tokenURI(uint256 tokenId)
         public
