@@ -1,21 +1,15 @@
 pragma solidity ^0.8.0;
 
-import "../lib/@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "../lib/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "../lib/@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "../lib/@openzeppelin/contracts/governance/IGovernor.sol";
+import {ERC721Upgradeable} from "../lib/@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {ERC165Checker} from "../lib/@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import {Clones} from "../lib/@openzeppelin/contracts/proxy/Clones.sol";
 import {CollectionGovernor} from "./CollectionGovernor.sol";
 import {GovernanceERC20Token} from "./GovernanceERC20Token.sol";
 import {IVotes} from "../lib/@openzeppelin/contracts/governance/utils/IVotes.sol";
 
-contract Collection is ERC721, IERC721Receiver {
-    using ERC165Checker for address;
-
+contract Collection is ERC721Upgradeable {
     error NonGovernor(address account);
-
-    error NonexistantCollection();
 
     address public governor;
 
@@ -24,9 +18,6 @@ contract Collection is ERC721, IERC721Receiver {
     uint256 private nextCollectionId;
 
     uint256 private nextTokenId;
-
-    // EVENTS
-    event CollectionCreated(string name, address governor, uint256 collectionId);
 
     event VersionMinted(
         uint256 collectionId,
@@ -42,12 +33,8 @@ contract Collection is ERC721, IERC721Receiver {
         _;
     }
 
-    constructor(string memory _name, string memory _symbol, string memory _baseURI) ERC721(_name, _symbol) {
-        baseURI = _baseURI;
-        admin = msg.sender;
-        governanceTokenImplementation = IVotes(new GovernanceERC20Token());
-        governanceTokenImplementationAddress = address(governanceTokenImplementation);
-        governorImplementation = address(new CollectionGovernor(governanceTokenImplementation));
+    function initialize(string memory _name, string memory _symbol) public payable initializer {
+        __ERC721_init(_name, _symbol);
     }
 
     // function mintVersion(
@@ -81,7 +68,6 @@ contract Collection is ERC721, IERC721Receiver {
             string(
                 abi.encodePacked(
                     baseURI,
-                    _toString(tokenToCollection[tokenId]),
                     "/",
                     _toString(tokenId)
                 )
@@ -122,17 +108,5 @@ contract Collection is ERC721, IERC721Receiver {
             value /= 10;
         }
         return string(buffer);
-    }
-
-    function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
-    ) external override returns (bytes4) {
-        return
-            bytes4(
-                keccak256("onERC721Received(address,address,uint256,bytes)")
-            );
     }
 }

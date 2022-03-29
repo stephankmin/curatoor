@@ -30,8 +30,11 @@ contract CollectionFactory {
     }
     
     function createCollection(string memory name, string memory symbol) external {
+        // encodes function call to initialize collection contract
+        bytes memory collectionProxyInitializeData = abi.encodeWithSignature("initialize(string,string)", name, symbol);
+
         // deploys a Beacon Proxy pointing to the Upgradeable Beacon for a Collection ERC721
-        BeaconProxy collectionBeaconProxy = new BeaconProxy(collectionUpgradeableBeacon, "");
+        BeaconProxy collectionBeaconProxy = new BeaconProxy(collectionUpgradeableBeacon, collectionProxyInitializeData);
 
         // deploys a Beacon Proxy pointing to the Upgradeable Beacon for a Collection Governor
         BeaconProxy governorBeaconProxy = new BeaconProxy(governorUpgradeableBeacon, "");

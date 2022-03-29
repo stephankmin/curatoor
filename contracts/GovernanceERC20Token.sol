@@ -1,31 +1,36 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 
-contract GovernanceERC20Token is ERC20, ERC20Permit, ERC20Votes {
-    constructor() ERC20("Gov Token", "GOVTOK") ERC20Permit("Gov Token") {}
+contract GovernanceERC20Token is ERC20Upgradeable, ERC20PermitUpgradeable, ERC20VotesUpgradeable {
+
+    function initialize(string memory _name, string memory _symbol) public payable initializer {
+        __ERC20_init(_name, _symbol);
+        __ERC20Permit_init(_name);
+        __ERC20Votes_init_unchained();
+    }
 
     function _afterTokenTransfer(
         address from,
         address to,
         uint256 amount
-    ) internal override(ERC20, ERC20Votes) {
+    ) internal override(ERC20Upgradeable, ERC20VotesUpgradeable) {
         super._afterTokenTransfer(from, to, amount);
     }
 
     function _mint(address to, uint256 amount)
         internal
-        override(ERC20, ERC20Votes)
+        override(ERC20Upgradeable, ERC20VotesUpgradeable)
     {
         super._mint(to, amount);
     }
 
     function _burn(address account, uint256 amount)
         internal
-        override(ERC20, ERC20Votes)
+        override(ERC20Upgradeable, ERC20VotesUpgradeable)
     {
         super._burn(account, amount);
     }

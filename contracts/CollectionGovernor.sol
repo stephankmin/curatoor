@@ -1,33 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "../lib/@openzeppelin/contracts/governance/Governor.sol";
-import "../lib/@openzeppelin/contracts/governance/IGovernor.sol";
-import "../lib/@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
-import "../lib/@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
-import "../lib/@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
+import "../lib/@openzeppelin/contracts-upgradeable/governance/GovernorUpgradeable.sol";
+import "../lib/@openzeppelin/contracts/governance/utils/IVotes.sol";
+import "../lib/@openzeppelin/contracts-upgradeable/governance/IGovernorUpgradeable.sol";
+import "../lib/@openzeppelin/contracts-upgradeable/governance/extensions/GovernorVotesUpgradeable.sol";
+import "../lib/@openzeppelin/contracts-upgradeable/governance/extensions/GovernorCountingSimpleUpgradeable.sol";
+import "../lib/@openzeppelin/contracts-upgradeable/governance/extensions/GovernorVotesQuorumFractionUpgradeable.sol";
 
 contract CollectionGovernor is
-    Governor,
-    GovernorVotes,
-    GovernorCountingSimple,
-    GovernorVotesQuorumFraction
+    GovernorUpgradeable,
+    GovernorVotesUpgradeable,
+    GovernorCountingSimpleUpgradeable,
+    GovernorVotesQuorumFractionUpgradeable
 {
     error NotGovernee();
 
-    error NotOwner(address sender);
+    address public governeeCollectionAddress;
 
-    address public governee;
-
-    address public owner;
-
-    constructor(IVotes _token)
-        Governor("CollectionGovernor")
-        GovernorVotes(_token)
-        GovernorVotesQuorumFraction(4)
-    {
-        // can only execute function calls to Collections.sol
-        governee = msg.sender;
+    function initialize(string memory _name, IVotes _token, address _governeeCollectionAddress) public payable initializer {
+        __Governor_init(name_);
+        __GovernorVotes_init(_token);
+        __GovernorVotesQuorumFraction_init(4);
+        governeeCollectionAddress = _governeeCollectionAddress;
     }
 
     modifier onlyOwner() {
