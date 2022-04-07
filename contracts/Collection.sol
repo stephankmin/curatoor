@@ -25,6 +25,8 @@ contract Collection is ERC721Upgradeable {
         bytes32 contentHash
     );
 
+    event BaseURIUpdated(string baseURI);
+
     modifier onlyGovernor(uint256 collectionId) {
         require(
             msg.sender == governor,
@@ -36,26 +38,6 @@ contract Collection is ERC721Upgradeable {
     function initialize(string memory _name, string memory _symbol) public payable initializer {
         __ERC721_init(_name, _symbol);
     }
-
-    // function mintVersion(
-    //     uint256 collectionId,
-    //     bytes32 contentHash
-    // ) external virtual onlyGovernor(collectionId) {
-    //     uint256 versionId = collections[collectionId].latestVersionId + 1;
-
-    //     address recipient = collections[collectionId].governor;
-
-    //     collectionVersions[collectionId][versionId] = Version({
-    //         tokenId: nextTokenId,
-    //         contentHash: contentHash
-    //     });
-
-    //     _safeMint(recipient, nextTokenId);
-
-    //     emit VersionMinted(collectionId, nextTokenId, contentHash);
-
-    //     ++nextTokenId;
-    // }
 
     function tokenURI(uint256 tokenId)
         public
@@ -72,6 +54,12 @@ contract Collection is ERC721Upgradeable {
                     _toString(tokenId)
                 )
             );
+    }
+
+    function updateBaseURI(string calldata _newBaseURI) external onlyGovernor {
+        baseURI = _newBaseURI;
+
+        emit BaseURIUpdated(_newBaseURI);
     }
 
     // function transferGovernance(uint256 collectionId, address newGovernor)
